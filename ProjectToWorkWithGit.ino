@@ -1,9 +1,11 @@
 //Jest to próba ulepszenia poprzedniej wersji programu poprzez optymalizację kodu i zwiększenie jego czytelności
 //Gdy zworka jest zamontowana, to wykorzystujemy diodę czerwoną i moduł HMC
+#include "ArduinoLowPower.h"
 #include<math.h>
 #include <Wire.h>
 #include <MKRWAN.h>
 #include "arduino_secrets.h"
+//#include <LoRa.h>
 
 #define addressHMC 0x1E    //adres modułu HMC5883L dla I2C
 #define addressQMC 0x0D
@@ -19,6 +21,7 @@ const int resetPin=0;
 const int RedDiode =  3;
 const int YellowDiode =  4;
 String LastMessage = "NULL";
+int sleepProvider=0;
 
 void reboot(){digitalWrite(RedDiode, HIGH);
       digitalWrite(YellowDiode, HIGH);
@@ -138,6 +141,7 @@ void ComS(bool isHMC){
   }
 
 void setup(){
+  sleepProvider=0;
 pinMode(resetPin, OUTPUT);
 digitalWrite(resetPin, HIGH);
 pinMode(resetButtonPin, INPUT);
@@ -240,6 +244,7 @@ for (int i=0;i<7;i++){
 
 }
 void loop(){
+  sleepProvider++;
   Serial.println("Jestes w petli");
 	  if (digitalRead(resetButtonPin) == HIGH) {reboot();}
   int x,y,z;
@@ -279,5 +284,17 @@ void loop(){
   Serial.print("vector: ");double v=x*x+y*y+z*z;
   Serial.print(sqrt(v));Serial.print(":");Serial.print(Ex);
   Serial.print(":");Serial.print(tEx);Serial.print(":");
-  delay(500);//TODO zamiast tego delaya trzeba dać usypianie -tryb oszczędzania energii
+
+  Serial.end();
+  USBDevice.detach(); // Safely detach the USB prior to sleeping
+
+  if (sleepProvider>=5)
+  {
+  sleepProvider=0;
+  LowPower.deepSleep(18000);
+  }
+
+  
+  USBDevice.attach();
+ 
 }
